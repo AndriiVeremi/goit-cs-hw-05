@@ -1,0 +1,1151 @@
+{
+  "name": "AI Personal Assistant Dashyk_Full",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "8036f899-e231-4711-9473-4d04c0329ba0",
+      "name": "Calculator",
+      "type": "@n8n/n8n-nodes-langchain.toolCalculator",
+      "position": [
+        -880,
+        544
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('Prepare Agent Input').item.json.agentInputText }}",
+        "options": {
+          "systemMessage": "=ROLE\n\nYou are an AI agent-dispatcher named Ava. Your ONLY job is to receive auser request and immediately delegate it to the correct tool or specialist agent. You are FORBIDDEN from answering questions or performing tasks yourself. Your entire purpose is to simply call the correct tool.\n \nROUTING LOGIC\n\n1.  If the user's request contains words like \"spreadsheet,\" \"sheet,\" or \"table,\" you MUST use the `AI Agent Tool Sheets`.\n2.  If the user's request contains words like \"document,\" \"doc,\" or \"file,\" you MUST use the `AI Agent Tool Docs`.\n3.  For all other tasks, choose the appropriate tool from the list below.\n\nTHE TOOLS ARE:\n\n- AI Agent Tool Sheets: SPECIALIST AGENT for all Google Sheets tasks.\n- AI Agent Tool Docs: SPECIALIST AGENT for all Google Docs tasks.\n- Google Calendar Tool: For calendar events.\n- Get many messages in Gmail: For reading emails.\n- Send a message in Gmail: For sending emails.\n- Delete a message in Gmail: For deleting emails.\n- Google Search: For web searches.\n- Calculator: For math.\n- Weather Tool: For weather forecasts.\n\nTOOL INSTRUCTIONS\n \n- To use `AI Agent Tool Sheets` or `AI Agent Tool Docs`, simply pass the user's full, original request to the tool. For example, if the user says \"create a spreadsheet for my budget,\" your instruction to the tool should be \"create a spreadsheet for my budget.\"\n- For `Get many messages in Gmail`, when summarizing emails, you MUST strictly follow this format: Від [Sender's Name or Email]:: \"[Subject]\" \\n[A very short, one-sentence summary of the body]. Example: Від John Doe:: \"Meeting confirmation\"\\nJohn confirms the meeting for tomorrow at 10 AM.\n- For `Google Calendar Tool`, format the request as a natural language instruction (e.g., \"Create an event 'Meeting' for tomorrow at 10 AM\").\n \nUser's message: {{ $json.text }}\n\nADDITIONAL INFORMATION\n \nYou are talking to Андрій. He is from Ukraine, lives in Warsaw, Poland, and is finishing his Master's degree in Software Engineering.\nThe current date and time is {{ $now.toString() }}\nTime zone is CET/CEST (Warsaw)\n\nRULES\n\n- Always convert event start and end times to UTC (ISO format ending with Z).\n- Ask for clarification if details are missing or ambiguous.\n- When reading numbers with decimals (e.g., 14.25), you MUST round them to the nearest whole number (e.g., \"14 degrees\"). NEVER read \"14.25\" as \"one thousand four hundred twenty-five\".\n\n",
+          "returnIntermediateSteps": true
+        }
+      },
+      "id": "3bbe14e3-c49f-493b-bd62-b30e01e1db9d",
+      "name": "AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "position": [
+        -464,
+        192
+      ],
+      "typeVersion": 1.8,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "39a9d279-3996-4a07-abbd-08e889726bd5",
+      "name": "Google Search",
+      "type": "@n8n/n8n-nodes-langchain.toolSerpApi",
+      "position": [
+        -736,
+        544
+      ],
+      "typeVersion": 1,
+      "credentials": {
+        "serpApi": {
+          "id": "Ra9HmwstqLvCd0hu",
+          "name": "SerpAPI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger1').item.json.message.chat.id }}",
+        "text": "={{ $json.content.parts[0].text }}{{ $json.cleanedText }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "id": "735bf0d6-21f4-4d35-881f-4caf46d224cf",
+      "name": "Response",
+      "type": "n8n-nodes-base.telegram",
+      "position": [
+        288,
+        192
+      ],
+      "webhookId": "5dced4b9-5066-4036-a4d4-14fc07edd53c",
+      "typeVersion": 1.2,
+      "credentials": {
+        "telegramApi": {
+          "id": "LLyqA6mgLSRAaf2r",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {
+          "download": true
+        }
+      },
+      "id": "ca7c0b5d-8281-4ae3-961c-76f753af662a",
+      "name": "Telegram Trigger1",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "position": [
+        -1840,
+        176
+      ],
+      "webhookId": "47bfd98b-694c-484d-9760-d2532dfdcdc4",
+      "typeVersion": 1.1,
+      "credentials": {
+        "telegramApi": {
+          "id": "LLyqA6mgLSRAaf2r",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Telegram Trigger1').item.json.message.chat.id }}",
+        "contextWindowLength": 50
+      },
+      "id": "d7ddfdf9-3641-48c1-934a-300294787310",
+      "name": "Simple Memory",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "position": [
+        -1104,
+        480
+      ],
+      "typeVersion": 1.3
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -1264,
+        480
+      ],
+      "id": "f288194d-7da2-4764-a2ba-32a76e8b2599",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "t4PgVqgICEkzcDxb",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "limit": 20,
+        "filters": {}
+      },
+      "type": "n8n-nodes-base.gmailTool",
+      "typeVersion": 2.1,
+      "position": [
+        256,
+        576
+      ],
+      "id": "c8cc67f5-8a6e-438c-968c-7c78986ead7c",
+      "name": "Get many messages in Gmail",
+      "webhookId": "7cea5489-49c3-428b-b7ed-b7669cc1cc39",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "Mp43APUjbdVScbbM",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $fromAI('to', 'Recipient email address') }}",
+        "subject": "={{ $fromAI('subject', 'The subject of the email') }}",
+        "message": "={{ $fromAI('body', 'The content of the email') }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmailTool",
+      "typeVersion": 2.1,
+      "position": [
+        432,
+        576
+      ],
+      "id": "b0599d05-97e4-4010-9d11-dcda57145fa1",
+      "name": "Send a message in Gmail",
+      "webhookId": "fedce51f-a66f-449f-b8ba-b340f3fb41d2",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "Mp43APUjbdVScbbM",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "delete",
+        "messageId": "={{ $fromAI('messageId', 'The ID of the email message to      delete') }}"
+      },
+      "type": "n8n-nodes-base.gmailTool",
+      "typeVersion": 2.1,
+      "position": [
+        608,
+        576
+      ],
+      "id": "da6fdef0-db46-4e74-92b8-bd2604def1f4",
+      "name": "Delete a message in Gmail",
+      "webhookId": "a40013e6-bd7d-49b3-9423-4a8ab559cd57",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "Mp43APUjbdVScbbM",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "calendar": {
+          "__rl": true,
+          "value": "dashuk10@gmail.com",
+          "mode": "list",
+          "cachedResultName": "dashuk10@gmail.com"
+        },
+        "limit": 20,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.3,
+      "position": [
+        -272,
+        576
+      ],
+      "id": "bf2eb385-54ed-4c8c-9787-7b65bcc6677c",
+      "name": "Get many events in Google Calendar",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "KDDqUNvLWb4dDSQE",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "calendar": {
+          "__rl": true,
+          "value": "dashuk10@gmail.com",
+          "mode": "list",
+          "cachedResultName": "dashuk10@gmail.com"
+        },
+        "start": "={{ $fromAI('Start', '', 'string') }}",
+        "end": "={{ $fromAI('End', '', 'string') }}",
+        "additionalFields": {
+          "summary": "={{ $fromAI('Summary', ``, 'string') }}"
+        }
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.3,
+      "position": [
+        -112,
+        576
+      ],
+      "id": "0934b444-02db-48b3-b4f5-088d7927f4c0",
+      "name": "Create an event in Google Calenda",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "KDDqUNvLWb4dDSQE",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "return items.map(item => {\n  let text = item.json.output || item.json.response || \"\";\n\n  // Видаляємо символи, які ламають MarkdownV2, крім переносів рядків\n  text = text.replace(/[*_[\\]()<>~`#+\\-=|{}.!]/g, '');\n\n  // Розбиваємо текст на окремі листи за \"Від \"\n  let lines = text.split('Від ').filter(Boolean);\n\n  let formatted = lines.map(line => {\n    // Розділяємо на відправника, тему та тіло\n    let parts = line.split('\"');\n    if(parts.length >= 2){\n      let sender = parts[0].trim();\n      let subject = parts[1].trim();\n      let body = parts.slice(2).join('\"').trim();\n\n      // Форматуємо\n      return `📧 *${sender}*: *\"${subject}\"*\\n${body}`;\n    }\n    return line;\n  }).join('\\n\\n'); // додаємо пропуск між листами\n\n  return { json: { cleanedText: formatted } };\n});\n\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -32,
+        192
+      ],
+      "id": "a0dd42eb-ada1-4a54-b1b1-709b80c121ce",
+      "name": "Text Filter"
+    },
+    {
+      "parameters": {
+        "operation": "5DayForecast",
+        "cityName": "warsaw",
+        "language": "ua"
+      },
+      "type": "n8n-nodes-base.openWeatherMapTool",
+      "typeVersion": 1,
+      "position": [
+        -560,
+        544
+      ],
+      "id": "ce3df578-e864-4e1e-8cb4-b34c9fb70f2a",
+      "name": "OpenWeatherMap",
+      "credentials": {
+        "openWeatherMapApi": {
+          "id": "tuDlmpectnExUu5B",
+          "name": "OpenWeatherMap account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "e702951d-cde4-446c-9a21-cc39d860d947",
+              "leftValue": "={{ $json[\"message\"][\"voice\"] }}",
+              "rightValue": "",
+              "operator": {
+                "type": "object",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1632,
+        176
+      ],
+      "id": "3ed80fe9-4aaa-4d14-bf34-59789e98a331",
+      "name": "If",
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "resource": "audio",
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-pro",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-pro"
+        },
+        "inputType": "binary",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1,
+      "position": [
+        -1184,
+        64
+      ],
+      "id": "56c32b2f-8eb4-4f9e-8280-5b0aef6b4c59",
+      "name": "Transcribe a recording",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "t4PgVqgICEkzcDxb",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "74719dec-378a-48d9-bd66-0ab2df241ffa",
+              "name": "agentInputText",
+              "value": "={{ $json.transcribedText || $('Telegram Trigger1').item.json.message.text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -720,
+        192
+      ],
+      "id": "6f1a072d-b234-4efe-a4c5-5b15db896b26",
+      "name": "Prepare Agent Input"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "2c5ad849-71d3-4d15-ad5d-971101551ceb",
+              "name": "transcribedText",
+              "value": "={{ $('Transcribe a recording').item.json.content.parts[0].text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -944,
+        64
+      ],
+      "id": "bac6f84f-d998-43fe-a966-aa3734efbd33",
+      "name": "Set Transcribed Text"
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "fileId": "={{ $json.message.voice.file_id }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -1408,
+        64
+      ],
+      "id": "8604e5c0-6071-453c-b9e7-590f5dcccb22",
+      "name": "Get a voice",
+      "webhookId": "c0c748f0-62c9-44a6-b206-856b31c3081b",
+      "credentials": {
+        "telegramApi": {
+          "id": "LLyqA6mgLSRAaf2r",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "delete",
+        "calendar": {
+          "__rl": true,
+          "value": "2e7c554b9d42ca108e0ee2fa61ed892368afd6c33968ebc950cc7e60d42cece9@group.calendar.google.com",
+          "mode": "list",
+          "cachedResultName": "Dashyk Calendar N8N"
+        },
+        "eventId": "={{ $fromAI('Event_ID', ``, 'string') }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.3,
+      "position": [
+        64,
+        576
+      ],
+      "id": "ec4752b1-ec76-493b-a7d2-a5203aa87fb0",
+      "name": "Delete an event in Google Calendar",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "KDDqUNvLWb4dDSQE",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "spreadsheet",
+        "title": "={{ $fromAI('Title', ``, 'string') }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        -528,
+        1312
+      ],
+      "id": "6785c6d0-02b5-424e-a671-756d2a4328d0",
+      "name": "Create spreadsheet in Google Sheets",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "zdYoZMtum9rzGlyq",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "spreadsheet",
+        "operation": "deleteSpreadsheet",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $fromAI('Document', ``, 'string') }}",
+          "mode": "id"
+        }
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        -352,
+        1312
+      ],
+      "id": "956beaa4-180b-4a46-9d14-8851291f9817",
+      "name": "Delete spreadsheet in Google Sheets",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "zdYoZMtum9rzGlyq",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $fromAI('Document', ``, 'string') }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "={{ $fromAI('Sheet', ``, 'string') }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        -112,
+        1328
+      ],
+      "id": "bb539187-111c-4476-9f5c-198975e8d30a",
+      "name": "Get row(s) in sheet in Google Sheets",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "zdYoZMtum9rzGlyq",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "llama-3.3-70b-versatile",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        -960,
+        1312
+      ],
+      "id": "fb570850-8bac-4c16-afe1-46785bb1e76b",
+      "name": "Groq Chat Model",
+      "credentials": {
+        "groqApi": {
+          "id": "xLVrjcDT5Fw67Ejq",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Telegram Trigger1').item.json.message.chat.id }}",
+        "contextWindowLength": 20
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        -752,
+        1312
+      ],
+      "id": "1da0f526-2633-414e-8ff6-4b9c72e5ea81",
+      "name": "Simple Memory Sheets"
+    },
+    {
+      "parameters": {
+        "operation": "delete",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $fromAI('Document', ``, 'string') }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "={{ $fromAI('Sheet', ``, 'string') }}",
+          "mode": "id"
+        },
+        "startIndex": "={{ $fromAI('Start_Row_Number', ``, 'number') }}",
+        "numberToDelete": "={{ $fromAI('Number_of_Rows_to_Delete', ``, 'number') }}"
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        64,
+        1312
+      ],
+      "id": "b94ed385-f036-482e-b071-066476844f2d",
+      "name": "Delete rows or columns from sheet in Google Sheets",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "zdYoZMtum9rzGlyq",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Document', ``, 'string') }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Sheet', ``, 'string') }}",
+          "mode": "id"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        256,
+        1312
+      ],
+      "id": "86a39a59-f614-4bb4-916c-df69274d0ac6",
+      "name": "Append or update row in sheet in Google Sheets",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "zdYoZMtum9rzGlyq",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "llama-3.3-70b-versatile",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        832,
+        1360
+      ],
+      "id": "285ea1d1-34e3-4451-b76d-da4d864c569f",
+      "name": "Groq Chat Model1",
+      "credentials": {
+        "groqApi": {
+          "id": "xLVrjcDT5Fw67Ejq",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "contextWindowLength": 20
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        1024,
+        1360
+      ],
+      "id": "8cdba5c5-984e-4f35-85a9-bf17e621b79f",
+      "name": "Simple Memory Docs"
+    },
+    {
+      "parameters": {
+        "driveId": "=myDrive",
+        "folderId": "=",
+        "title": "={{ $fromAI('Title', ``, 'string') }}"
+      },
+      "type": "n8n-nodes-base.googleDocsTool",
+      "typeVersion": 2,
+      "position": [
+        1280,
+        1360
+      ],
+      "id": "5efee8b7-2657-4048-98d7-5f7e903f82f4",
+      "name": "Create a document in Google Docs",
+      "credentials": {
+        "googleDocsOAuth2Api": {
+          "id": "7j99Nsq1e6oe471d",
+          "name": "Google Docs account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "documentURL": "={{ $fromAI('Doc_ID_or_URL', ``, 'string') }}",
+        "simple": "={{ true }}"
+      },
+      "type": "n8n-nodes-base.googleDocsTool",
+      "typeVersion": 2,
+      "position": [
+        1632,
+        1360
+      ],
+      "id": "4d62c311-8cb6-4c3a-a57d-ad45a35dff8b",
+      "name": "Get a document in Google Docs",
+      "credentials": {
+        "googleDocsOAuth2Api": {
+          "id": "7j99Nsq1e6oe471d",
+          "name": "Google Docs account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentURL": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Doc_ID_or_URL', ``, 'string') }}",
+        "actionsUi": {
+          "actionFields": [
+            {
+              "action": "insert",
+              "text": "={{ $fromAI('actionFields0_Text', ``, 'string') }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.googleDocsTool",
+      "typeVersion": 2,
+      "position": [
+        1456,
+        1360
+      ],
+      "id": "afaa8cc3-2803-437b-a344-545965a8f398",
+      "name": "Update a document in Google Docs",
+      "credentials": {
+        "googleDocsOAuth2Api": {
+          "id": "7j99Nsq1e6oe471d",
+          "name": "Google Docs account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "text": "=ROLE\n\nYou are a specialized agent expert in Google Docs. Your only functionis to manage documents. You must strictly follow the user's instructions to perform one of the following actions: create a new document, get the content of a document, or update a document.\n\nTOOLS\n\nYou have the following tools at your disposal:\n- Create a document in Google Docs\n- Get a document in Google Docs\n- Update a document in Google Docs\n\nINSTRUCTIONS\n\n1.  Analyze the request to understand which tool to use (create, get,or update).\n2.  Extract all necessary parameters for the tool (like Document ID/URL, text to insert, title, etc.).\n3.  Execute the tool with the extracted parameters.\n4.  Do not ask clarifying questions. Perform the task only with the data provided in the request.\n5.  Your response should only be the result of the tool's execution. Do not add any extra text.\n",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agentTool",
+      "typeVersion": 2.2,
+      "position": [
+        1024,
+        960
+      ],
+      "id": "5442f81c-e19b-4be3-a3bc-cd87b4bf640d",
+      "name": "AI Agent Tool Docs"
+    },
+    {
+      "parameters": {
+        "text": "=ROLE\n\nYou are a specialized agent expert in Google Sheets. Your only functionis to manage spreadsheets. You must strictly follow the user's instructions to perform one of the following actions: create a new spreadsheet, delete a spreadsheet, get data from a sheet, delete rows or columns, or add/update a row.\n\nTOOLS\n\nYou have the following tools at your disposal:\n- Create spreadsheet in Google Sheets\n- Delete spreadsheet in Google Sheets\n- Get row(s) in sheet in Google Sheets\n- Delete rows or columns from sheet in Google Sheets\n- Append or update row in sheet in Google Sheets\n \nINSTRUCTIONS\n\n1.  Analyze the request to understand which tool to use.\n2.  Extract all necessary parameters for the tool (like Document ID,Sheet Name, data to add, etc.).\n3.  Execute the tool with the extracted parameters.\n4.  Do not ask clarifying questions. Perform the task only with the data provided in the request.\n5.  Your response should only be the result of the tool's execution. Do not add any extra text.\n",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agentTool",
+      "typeVersion": 2.2,
+      "position": [
+        -688,
+        976
+      ],
+      "id": "77ceaca2-9461-44a2-98e9-148f4a27b541",
+      "name": "AI Agent Tool Sheets"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Text Filter",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Text Filter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculator": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Search": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Trigger1": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get many messages in Gmail": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message in Gmail": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delete a message in Gmail": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get many events in Google Calendar": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create an event in Google Calenda": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenWeatherMap": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Get a voice",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare Agent Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transcribe a recording": {
+      "main": [
+        [
+          {
+            "node": "Set Transcribed Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Agent Input": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Transcribed Text": {
+      "main": [
+        [
+          {
+            "node": "Prepare Agent Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get a voice": {
+      "main": [
+        [
+          {
+            "node": "Transcribe a recording",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Text Filter": {
+      "main": [
+        [
+          {
+            "node": "Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delete an event in Google Calendar": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create spreadsheet in Google Sheets": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent Tool Sheets",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delete spreadsheet in Google Sheets": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent Tool Sheets",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet in Google Sheets": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent Tool Sheets",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent Tool Sheets",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory Sheets": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent Tool Sheets",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delete rows or columns from sheet in Google Sheets": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent Tool Sheets",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append or update row in sheet in Google Sheets": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent Tool Sheets",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent Tool Docs",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory Docs": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent Tool Docs",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create a document in Google Docs": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent Tool Docs",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get a document in Google Docs": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent Tool Docs",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update a document in Google Docs": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent Tool Docs",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent Tool Docs": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent Tool Sheets": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "3b838433-e1ca-494e-a5f6-3ccea59e8e9b",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "15610b02a48eff130b28b60c7eaccba2d5d8ced28731b8e9e98fdf0b9c39e8ce"
+  },
+  "id": "rgAw4A2pJ2zVP0Qa",
+  "tags": []
+}
